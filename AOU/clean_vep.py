@@ -7,7 +7,7 @@ import numpy as np
 
 # define arguments
 def make_arg_parser():
-    parser = ap.ArgumentParser(description='.')
+    parser = ap.ArgumentParser(description = '.')
 
     parser.add_argument('--vep', required = True, help = 'vep output file')
 
@@ -102,11 +102,11 @@ within_gene_dups_known = within_gene_dups[within_gene_dups['GENE'].isin(known_ge
 
 ## check to see if there are still dups after filtering to known genes, and if so, aggregate them
 if len(within_gene_dups_known[within_gene_dups_known['ID'].duplicated(keep = False)].index) != 0:
-    within_gene_dups_known = within_gene_dups_known.groupby(['ID', 'CHR', 'POS'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
+    within_gene_dups_known = within_gene_dups_known.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
 
 ## filter to IDs with non-known genes and aggregate them
 within_gene_dups_no_known = within_gene_dups[~within_gene_dups['ID'].isin(within_gene_dups_known['ID'])]
-within_gene_dups_no_known = within_gene_dups_no_known.groupby(['ID', 'CHR', 'POS'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
+within_gene_dups_no_known = within_gene_dups_no_known.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
 
 ## reconcat
 within_gene_fixed = pd.concat([within_gene_no_dups, within_gene_dups_known, within_gene_dups_no_known], axis = 0)
@@ -132,10 +132,10 @@ downstream_known = downstream[downstream['GENE'].isin(known_gene_list)].drop(col
 
 ## check for duplicates in known genes, and if they exist, combine thems
 if len(upstream_known[upstream_known['ID'].duplicated(keep = False)].index) != 0:
-    upstream_known = upstream_known.groupby(['ID', 'CHR', 'POS'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
+    upstream_known = upstream_known.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
 
 if len(downstream_known[downstream_known['ID'].duplicated(keep = False)].index) != 0:
-    downstream_known = downstream_known.groupby(['ID', 'CHR', 'POS'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
+    downstream_known = downstream_known.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
 
 ## filter to ids with non-known genes
 upstream_no_known = upstream[~upstream['ID'].isin(upstream_known['ID'])]
@@ -154,10 +154,10 @@ downstream_no_known = downstream_no_known.drop(columns = ['ENSEMBL_ID', 'START',
 
 ## check for remaining duplicates, and if they exist, combine them
 if len(upstream_no_known[upstream_no_known['ID'].duplicated(keep = False)].index) != 0:
-    upstream_no_known = upstream_no_known.groupby(['ID', 'CHR', 'POS'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
+    upstream_no_known = upstream_no_known.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
 
 if len(downstream_no_known[downstream_no_known['ID'].duplicated(keep = False)].index) != 0:
-    downstream_no_known = downstream_no_known.groupby(['ID', 'CHR', 'POS'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
+    downstream_no_known = downstream_no_known.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'GENE': lambda x: '/'.join(sorted(set(x)))})
 
 ## reconcat upstream and downstream
 upstream_fixed = pd.concat([upstream_known, upstream_no_known], axis = 0)
