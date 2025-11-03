@@ -11,7 +11,7 @@
 #   bsub < myjob.bsub
 ######################################################################
 
-#BSUB -J "clean_vep[1-8]"
+#BSUB -J "clean_vep"
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -40,15 +40,15 @@
 # Send email notification when the job finishes;
 # otherwise, summary is written to the output file.
 
-#BSUB -R "rusage[mem=200000]"
+#-#BSUB -R "rusage[mem=64000]"
 # Per-process memory reservation, in MB.
 # (Ensures the job will have this minimum memory.)
 
-#BSUB -M 200000
+#-#BSUB -M 64000
 # Per-process memory limit, in MB.
 # (Ensures the job will not exceed this maximum memory.)
 
-#BSUB -v 200000
+#-#BSUB -v 200000
 # Total process virtual (swap) memory limit, in MB.
 
 #-#BSUB -W 24:00
@@ -91,38 +91,9 @@ fi
 # submit it from, not (necessarily) the directory the script is in.
 ######################################################################
 
-# define parallelization variables
-PREFIX=(
-    "AFR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "EUR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "AFR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "EUR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
-    "EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
-)
-
-KNOWN_GENES=(
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "Free_T4_Known_Genes.txt"
-    "Free_T4_Known_Genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-)
-
-# Get the index of the current job
-INDEX=$((LSB_JOBINDEX-1))
-
-# Define parallelization variable indices
-PREFIX_INDEX=${PREFIX[$INDEX]}
-KNOWN_GENES_INDEX=${KNOWN_GENES[$INDEX]}
-
+# run script
 python clean_vep.py \
-        --vep vep_output/${PREFIX_INDEX}.vep_output.txt \
+        --vep vep_output/formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.clean.b38.suggestive.vep_output.txt \
         --coords ensembl_start_stop_v115/Homo_sapiens.GRCh38.115.gene_start_stop.autosomes.500kb_upstream_downstream.gtf.txt \
-        --known metasoft/${KNOWN_GENES_INDEX} \
-        --output_prefix vep_output/${PREFIX_INDEX}
+        --known INV_NORMAL_TSH.known_genes.txt \
+        --output_prefix vep_output/formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.clean.b38.suggestive

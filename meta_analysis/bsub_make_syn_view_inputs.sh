@@ -3,7 +3,7 @@
 # BSUB parameters
 ######################################################################
 
-#BSUB -J make_vcf[1-4]
+#BSUB -J syn_view_inputs[1-4]
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -15,13 +15,13 @@
 #   'step' is the step value between array indecies
 #   'limit' is the number of array sub-jobs that can run at once
 # In an array job, the variable $LSB_JOBINDEX will contain the index
-# of the current sub-job.
+# of the current sub-job
 
-#BSUB -o logs/make_vcf.%J.%I.out 
+#BSUB -o logs/syn_view_inputs.%J.%I.out 
 # Filename to append the job's stdout; change to -oo to overwrite.
 #'%J' becomes the job ID number, '%I' becomes the array index.
 
-#BSUB -e logs/make_vcf.%J.%I.err 
+#BSUB -e logs/syn_view_inputs.%J.%I.err
 # Filename to append the job's stderr; change to -eo to overwrite. 
 # If omitted, stderr is combined with stdout. 
 # '%J' becomes the job ID number, '%I' becomes the array index.
@@ -35,15 +35,15 @@
 #-#BSUB -N
 # Send email notification when the job finishes; otherwise, summary is written to the output file
 
-#-#BSUB -R "rusage[mem=200000]"
+#BSUB -R "rusage[mem=200000]"
 # Per-process memory reservation, in MB.
 # (Ensures the job will have this minimum memory.)
 
-#-#BSUB -M 200000
+#BSUB -M 200000
 # Per-process memory limit, in MB.
 # (Ensures the job will not exceed this maximum memory.)
 
-#-#BSUB -v 200000
+#BSUB -v 200000
 # Total process virtual (swap) memory limit, in MB.
 
 #-#BSUB -W 24:00
@@ -62,37 +62,38 @@
 ######################################################################
 
 # define parallelization variables
-## sumstats filepath
-SUMSTATS=(
-    "AOU_v8.INV_NORMAL_TSH.AFR.n=12385.suggestive.txt"
-    "AOU_v8.INV_NORMAL_TSH.EUR.n=12385.suggestive.txt"
-    "AOU_v8.FREE_T4.AFR.n=4037.suggestive.txt"
-    "AOU_v8.FREE_T4.EUR.n=4037.suggestive.txt"
+GENE=(
+        'PDE8B'
+        'PDE10A'
+        'PTCSC2'
+        'ATP5MGP4'
 )
-
-## output prefix
-OUTPUT_PREFIX=(
-    "AOU_v8.INV_NORMAL_TSH.AFR.n=12385.suggestive"
-    "AOU_v8.INV_NORMAL_TSH.EUR.n=12385.suggestive"
-    "AOU_v8.FREE_T4.AFR.n=4037.suggestive"
-    "AOU_v8.FREE_T4.EUR.n=4037.suggestive"
-)
-
 
 # Get the index of the current job
 INDEX=$((LSB_JOBINDEX-1))
 
 # Define parallelization variable indices
-SUMSTATS_INDEX=${SUMSTATS[$INDEX]}
-OUTPUT_PREFIX_INDEX=${OUTPUT_PREFIX[$INDEX]}
+GENE_INDEX=${GENE[$INDEX]}
 
-# call make vcf script
-python make_vcf.py \
---sumstats suggestive/${SUMSTATS_INDEX} \
---chr_colname '#CHROM' \
---pos_colname POS \
---id_colname ID \
---ref_colname REF \
---alt_colname ALT \
---input_type gwas \
---output_prefix sumstats_vcf/${OUTPUT_PREFIX_INDEX}
+# load/unload modules
+module unload python
+module load python
+
+# define sumstats dir
+SUMSTATS_DIR='output'
+VEP_DIR='vep_output'
+
+# command
+python make_syn_view_inputs.py \
+--sumstats_list ${SUMSTATS_DIR}/AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned.txt,${SUMSTATS_DIR}/EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned.txt \
+--vep_list ${VEP_DIR}/AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.vep_output.cleaned.txt,${VEP_DIR}/EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.vep_output.cleaned.txt \
+--beta_col_list AFR:es,EUR:es \
+--pval_col_list AFR:pval,EUR:pval \
+--pval_thres 5e-8 \
+--pval_colname PVALUE_RE \
+--beta_colname BETA_RE \
+--id_colname RSID \
+--chr_colname CHR \
+--pos_colname BP \
+--gene ${GENE_INDEX} \
+--output_prefix synthesis_view/TSH.5_inputs.metasoft.${GENE_INDEX}

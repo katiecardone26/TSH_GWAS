@@ -88,8 +88,9 @@ OUTPUT_PREFIX_INDEX=${OUTPUT_PREFIX[$INDEX]}
 python make_vcf.py \
 --sumstats output/suggestive/${SUMSTATS_INDEX} \
 --chr_colname '#CHROM' \
---pos_colname 'POS' \
---id_colname 'ID' \
---ref_colname 'REF' \
---alt_colname 'ALT' \
+--pos_colname POS \
+--id_colname ID \
+--ref_colname REF \
+--alt_colname ALT \
+--input_type gwas \
 --output_prefix output/vcf/${OUTPUT_PREFIX_INDEX}

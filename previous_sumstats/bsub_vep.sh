@@ -11,7 +11,7 @@
 #   bsub < myjob.bsub
 ######################################################################
 
-#BSUB -J "clean_vep[1-8]"
+#BSUB -J "vep_115"
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -25,11 +25,11 @@
 # In an array job, the variable $LSB_JOBINDEX will contain the index
 # of the current sub-job.
 
-#BSUB -o logs/clean_vep.%J-%I.out
+#BSUB -o logs/vep_115.%J-%I.out
 # Filename to append the job's stdout; change to -oo to overwrite.
 # '%J' becomes the job ID number, '%I' becomes the array index.
 
-#BSUB -e logs/clean_vep.%J-%I.err
+#BSUB -e logs/vep_115.%J-%I.err
 # Filename to append the job's stderr; change to -eo to overwrite.
 # If omitted, stderr is combined with stdout.
 
@@ -40,15 +40,15 @@
 # Send email notification when the job finishes;
 # otherwise, summary is written to the output file.
 
-#BSUB -R "rusage[mem=200000]"
+#-#BSUB -R "rusage[mem=200000]"
 # Per-process memory reservation, in MB.
 # (Ensures the job will have this minimum memory.)
 
-#BSUB -M 200000
+#-#BSUB -M 200000
 # Per-process memory limit, in MB.
 # (Ensures the job will not exceed this maximum memory.)
 
-#BSUB -v 200000
+#-#BSUB -v 200000
 # Total process virtual (swap) memory limit, in MB.
 
 #-#BSUB -W 24:00
@@ -91,38 +91,23 @@ fi
 # submit it from, not (necessarily) the directory the script is in.
 ######################################################################
 
-# define parallelization variables
-PREFIX=(
-    "AFR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "EUR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "AFR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "EUR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
-    "AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
-    "EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
-)
-
-KNOWN_GENES=(
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "Free_T4_Known_Genes.txt"
-    "Free_T4_Known_Genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-)
-
 # Get the index of the current job
 INDEX=$((LSB_JOBINDEX-1))
 
-# Define parallelization variable indices
-PREFIX_INDEX=${PREFIX[$INDEX]}
-KNOWN_GENES_INDEX=${KNOWN_GENES[$INDEX]}
+# load singularity module
+module load apptainer
 
-python clean_vep.py \
-        --vep vep_output/${PREFIX_INDEX}.vep_output.txt \
-        --coords ensembl_start_stop_v115/Homo_sapiens.GRCh38.115.gene_start_stop.autosomes.500kb_upstream_downstream.gtf.txt \
-        --known metasoft/${KNOWN_GENES_INDEX} \
-        --output_prefix vep_output/${PREFIX_INDEX}
+singularity exec --bind ./VEP_115_cache:/VEP_115_cache/,vcf:/vcf/,vep_output:/vep_output/ vep.sif \
+    vep --dir /VEP_115_cache/ --cache --offline --format vcf \
+        --force_overwrite \
+        -i /vcf/formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.clean.b38.suggestive.vcf \
+        -o /vep_output/formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.clean.b38.suggestive.vep_output.txt \
+        --tab \
+        --buffer_size 10000 \
+        --cache_version 115 \
+        --fields "Uploaded_variation,Location,Allele,SYMBOL,Gene,Distance,Existing_variation" \
+        --pick_allele_gene \
+        --distance 50000 \
+        --verbose \
+        --symbol \
+        --check_existing

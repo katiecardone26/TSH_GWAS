@@ -3,7 +3,7 @@
 # BSUB parameters
 ######################################################################
 
-#BSUB -J make_vcf[1-4]
+#BSUB -J locus_zoom_input
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -15,13 +15,13 @@
 #   'step' is the step value between array indecies
 #   'limit' is the number of array sub-jobs that can run at once
 # In an array job, the variable $LSB_JOBINDEX will contain the index
-# of the current sub-job.
+# of the current sub-job
 
-#BSUB -o logs/make_vcf.%J.%I.out 
+#BSUB -o logs/locus_zoom_input.%J.%I.out 
 # Filename to append the job's stdout; change to -oo to overwrite.
 #'%J' becomes the job ID number, '%I' becomes the array index.
 
-#BSUB -e logs/make_vcf.%J.%I.err 
+#BSUB -e logs/locus_zoom_input.%J.%I.err
 # Filename to append the job's stderr; change to -eo to overwrite. 
 # If omitted, stderr is combined with stdout. 
 # '%J' becomes the job ID number, '%I' becomes the array index.
@@ -35,15 +35,15 @@
 #-#BSUB -N
 # Send email notification when the job finishes; otherwise, summary is written to the output file
 
-#-#BSUB -R "rusage[mem=200000]"
+#BSUB -R "rusage[mem=200000]"
 # Per-process memory reservation, in MB.
-# (Ensures the job will have this minimum memory.)
+# (Ensures the joxb will have this minimum memory.)
 
-#-#BSUB -M 200000
+#BSUB -M 200000
 # Per-process memory limit, in MB.
 # (Ensures the job will not exceed this maximum memory.)
 
-#-#BSUB -v 200000
+#BSUB -v 200000
 # Total process virtual (swap) memory limit, in MB.
 
 #-#BSUB -W 24:00
@@ -61,38 +61,13 @@
 
 ######################################################################
 
-# define parallelization variables
-## sumstats filepath
-SUMSTATS=(
-    "AOU_v8.INV_NORMAL_TSH.AFR.n=12385.suggestive.txt"
-    "AOU_v8.INV_NORMAL_TSH.EUR.n=12385.suggestive.txt"
-    "AOU_v8.FREE_T4.AFR.n=4037.suggestive.txt"
-    "AOU_v8.FREE_T4.EUR.n=4037.suggestive.txt"
-)
+# load modules
+module load htslib
 
-## output prefix
-OUTPUT_PREFIX=(
-    "AOU_v8.INV_NORMAL_TSH.AFR.n=12385.suggestive"
-    "AOU_v8.INV_NORMAL_TSH.EUR.n=12385.suggestive"
-    "AOU_v8.FREE_T4.AFR.n=4037.suggestive"
-    "AOU_v8.FREE_T4.EUR.n=4037.suggestive"
-)
+# compress
+bgzip locus_zoom/AFR.INV_NORMAL_TSH.5_inputs.metasoft.locus_zoom_input.txt
+bgzip locus_zoom/EUR.INV_NORMAL_TSH.5_inputs.metasoft.locus_zoom_input.txt
 
-
-# Get the index of the current job
-INDEX=$((LSB_JOBINDEX-1))
-
-# Define parallelization variable indices
-SUMSTATS_INDEX=${SUMSTATS[$INDEX]}
-OUTPUT_PREFIX_INDEX=${OUTPUT_PREFIX[$INDEX]}
-
-# call make vcf script
-python make_vcf.py \
---sumstats suggestive/${SUMSTATS_INDEX} \
---chr_colname '#CHROM' \
---pos_colname POS \
---id_colname ID \
---ref_colname REF \
---alt_colname ALT \
---input_type gwas \
---output_prefix sumstats_vcf/${OUTPUT_PREFIX_INDEX}
+# tabix
+tabix -h -b 7 -e 7 -s 6 -S 1 -f locus_zoom/AFR.INV_NORMAL_TSH.5_inputs.metasoft.locus_zoom_input.txt.gz
+tabix -h -b 7 -e 7 -s 6 -S 1 -f locus_zoom/EUR.INV_NORMAL_TSH.5_inputs.metasoft.locus_zoom_input.txt.gz

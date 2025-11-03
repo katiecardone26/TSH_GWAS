@@ -3,7 +3,7 @@
 # BSUB parameters
 ######################################################################
 
-#BSUB -J clean_metasoft_output[1-4]
+#BSUB -J clean_metasoft_output[1-6]
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -76,13 +76,26 @@ ANCESTRY=(
     "EUR"
     "AFR"
     "EUR"
+    "AFR"
+    "EUR"
 )
 
 INPUTS=(
     '3'
     '3'
+    '3'
+    '3'
     '5'
     '5'
+)
+
+PHENO=(
+    'INV_NORMAL_TSH'
+    'INV_NORMAL_TSH'
+    'FREE_T4'
+    'FREE_T4'
+    'INV_NORMAL_TSH'
+    'INV_NORMAL_TSH'
 )
 
 # Get the index of the current job
@@ -91,16 +104,17 @@ INDEX=$((LSB_JOBINDEX-1))
 # Define parallelization variable indices
 ANCESTRY_INDEX=${ANCESTRY[$INDEX]}
 INPUTS_INDEX=${INPUTS[$INDEX]}
+PHENO_INDEX=${PHENO[$INDEX]}
 
 # load modules
 module purge
 module load python
 
 # remove last 2 columns
-cut -f1-16 output/${ANCESTRY_INDEX}.INV_NORMAL_TSH.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.txt > output/${ANCESTRY_INDEX}.INV_NORMAL_TSH.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned.txt
+cut -f1-16 output/${ANCESTRY_INDEX}.${PHENO_INDEX}.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.txt > /project/ritchie/projects/TSH/meta_analysis/metasoft/output/${ANCESTRY_INDEX}.${PHENO_INDEX}.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned.txt
 
 # run metasoft 
 python clean_metasoft_output.py \
-        --input output/${ANCESTRY_INDEX}.INV_NORMAL_TSH.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned.txt \
-        --output_prefix output/${ANCESTRY_INDEX}.INV_NORMAL_TSH.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned
+        --input output/${ANCESTRY_INDEX}.${PHENO_INDEX}.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned.txt \
+        --output_prefix output/${ANCESTRY_INDEX}.${PHENO_INDEX}.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned
      

@@ -11,7 +11,7 @@
 #   bsub < myjob.bsub
 ######################################################################
 
-#BSUB -J "vep_115[1-6]"
+#BSUB -J "vep_115[1-8]"
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -40,15 +40,15 @@
 # Send email notification when the job finishes;
 # otherwise, summary is written to the output file.
 
-#-#BSUB -R "rusage[mem=200000]"
+#BSUB -R "rusage[mem=200000]"
 # Per-process memory reservation, in MB.
 # (Ensures the job will have this minimum memory.)
 
-#-#BSUB -M 200000
+#BSUB -M 200000
 # Per-process memory limit, in MB.
 # (Ensures the job will not exceed this maximum memory.)
 
-#-#BSUB -v 200000
+#BSUB -v 200000
 # Total process virtual (swap) memory limit, in MB.
 
 #-#BSUB -W 24:00
@@ -96,6 +96,8 @@ fi
 PREFIX=(
     "AFR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
     "EUR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
+    "AFR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
+    "EUR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
     "AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
     "EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
     "AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"

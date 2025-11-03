@@ -3,7 +3,7 @@
 # BSUB parameters
 ######################################################################
 
-#BSUB -J make_vcf[1-6]
+#BSUB -J make_vcf[1-8]
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -66,6 +66,8 @@
 SUMSTATS=(
     "suggestive/AFR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive.txt"
     "suggestive/EUR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive.txt"
+    "suggestive/AFR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive.txt"
+    "suggestive/EUR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive.txt"
     "suggestive/AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive.txt"
     "suggestive/EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive.txt"
     "output/AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned.txt"
@@ -76,6 +78,8 @@ SUMSTATS=(
 OUTPUT_PREFIX=(
     "AFR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
     "EUR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
+    "AFR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
+    "EUR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
     "AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
     "EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.suggestive"
     "AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"

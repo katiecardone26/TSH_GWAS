@@ -7,21 +7,21 @@ from datetime import datetime
 def make_arg_parser():
     parser = ap.ArgumentParser(description = '.')
     # sumstats file name
-    parser.add_argument('--sumstats')
+    parser.add_argument('--sumstats', required = True, help = 'sumstats input file')
     # chr column name
-    parser.add_argument('--chr_colname')
+    parser.add_argument('--chr_colname', required = True, help = 'chromosome column name in sumstats')
     # pos column name
-    parser.add_argument('--pos_colname')
+    parser.add_argument('--pos_colname', required = True, help = 'position column name in sumstats')
     # id column name
-    parser.add_argument('--id_colname')
+    parser.add_argument('--id_colname', required = True, help = 'variant ID column name in sumstate')
     # ref column name
-    parser.add_argument('--ref_colname')
+    parser.add_argument('--ref_colname', required = True, help = 'ref allele column name in sumstats')
     # alt column name
-    parser.add_argument('--alt_colname')
+    parser.add_argument('--alt_colname', required = True, help = 'alt allele column name in sumstats')
     # input type
     parser.add_argument('--input_type', required = True, choices = ['gwas', 'meta'], help = 'input file type')
     # output prefix
-    parser.add_argument('--output_prefix')
+    parser.add_argument('--output_prefix', required = True, help = 'output prefix')
 
     return parser
 

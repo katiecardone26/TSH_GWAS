@@ -3,7 +3,7 @@
 # BSUB parameters
 ######################################################################
 
-#BSUB -J make_vcf[1-4]
+#BSUB -J make_vcf
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -61,38 +61,16 @@
 
 ######################################################################
 
-# define parallelization variables
-## sumstats filepath
-SUMSTATS=(
-    "AOU_v8.INV_NORMAL_TSH.AFR.n=12385.suggestive.txt"
-    "AOU_v8.INV_NORMAL_TSH.EUR.n=12385.suggestive.txt"
-    "AOU_v8.FREE_T4.AFR.n=4037.suggestive.txt"
-    "AOU_v8.FREE_T4.EUR.n=4037.suggestive.txt"
-)
-
-## output prefix
-OUTPUT_PREFIX=(
-    "AOU_v8.INV_NORMAL_TSH.AFR.n=12385.suggestive"
-    "AOU_v8.INV_NORMAL_TSH.EUR.n=12385.suggestive"
-    "AOU_v8.FREE_T4.AFR.n=4037.suggestive"
-    "AOU_v8.FREE_T4.EUR.n=4037.suggestive"
-)
-
-
 # Get the index of the current job
 INDEX=$((LSB_JOBINDEX-1))
 
-# Define parallelization variable indices
-SUMSTATS_INDEX=${SUMSTATS[$INDEX]}
-OUTPUT_PREFIX_INDEX=${OUTPUT_PREFIX[$INDEX]}
-
 # call make vcf script
 python make_vcf.py \
---sumstats suggestive/${SUMSTATS_INDEX} \
---chr_colname '#CHROM' \
+--sumstats suggestive/formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.clean.b38.suggestive.txt \
+--chr_colname CHR \
 --pos_colname POS \
---id_colname ID \
---ref_colname REF \
---alt_colname ALT \
+--id_colname rsid \
+--ref_colname Allele2 \
+--alt_colname Allele1 \
 --input_type gwas \
---output_prefix sumstats_vcf/${OUTPUT_PREFIX_INDEX}
+--output_prefix vcf/formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.clean.b38.suggestive

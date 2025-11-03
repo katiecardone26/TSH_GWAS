@@ -1,6 +1,8 @@
 # load modules
 import pandas as pd
 import argparse as ap
+import numpy as np
+import sys
 
 # define arguments
 def make_arg_parser():
@@ -34,46 +36,39 @@ gtf_gene_name = gtf_gene[gtf_gene[8].str.contains('gene_name')]
 # subset and rename columns
 gtf_sub = gtf_gene_name[[0, 3, 4, 8]]
 gtf_sub.rename(columns = {0 : 'CHR', 3 : 'START', 4 : 'STOP'}, inplace = True)
+gtf_sub_no_gene_name = gtf_gene[[0, 3, 4, 8]]
+gtf_sub_no_gene_name.rename(columns = {0 : 'CHR', 3 : 'START', 4 : 'STOP'}, inplace = True)
 
 # split column with gene information
 gtf_sub[[0, 1, 2, 3, 4, 5]] = gtf_sub[8].str.split(';', expand = True)
-
-# make pseudogenes/RNA/ribozyme files
-
-## filter file
-pseudo_rna_ribo = gtf_sub[gtf_sub[4].str.contains('|'.join(['pseudogene', 'RNA', 'ribozyme']))]
-
-## subset and rename
-pseudo_rna_ribo = pseudo_rna_ribo[[2, 4]]
-pseudo_rna_ribo.rename(columns = {2 : 'GENE', 4 : 'BIOTYPE'}, inplace = True)
-
-## clean up columns
-pseudo_rna_ribo['GENE'] = pseudo_rna_ribo['GENE'].str.replace('gene_name ', '')
-pseudo_rna_ribo['GENE'] = pseudo_rna_ribo['GENE'].str.replace('"', '')
-pseudo_rna_ribo['GENE'] = pseudo_rna_ribo['GENE'].str.replace(' ', '')
-pseudo_rna_ribo['BIOTYPE'] = pseudo_rna_ribo['BIOTYPE'].str.replace('gene_biotype ', '')
-pseudo_rna_ribo['BIOTYPE'] = pseudo_rna_ribo['BIOTYPE'].str.replace('"', '')
-pseudo_rna_ribo['BIOTYPE'] = pseudo_rna_ribo['BIOTYPE'].str.replace(' ', '')
-
-## drop duplicates
-pseudo_rna_ribo.drop_duplicates(inplace = True)
-
-## export files
-pseudo_rna_ribo.to_csv('Homo_sapiens.GRCh38.113.pseudogenes.RNA.ribozymes.gtf.txt', sep = '\t',index = None)
+gtf_sub_no_gene_name[[0, 1, 2, 3, 4, 5]] = gtf_sub_no_gene_name[8].str.split(';', expand = True)
 
 # filter and rename again
 gtf_split = gtf_sub[['CHR', 'START', 'STOP', 0, 2]]
 gtf_split.rename(columns = {0 : 'ENS_ID', 2 : 'GENE'}, inplace = True)
-
+gtf_split['GENE'] = gtf_split['GENE'].replace(['gene_sourcehavana', np.nan])
+gtf_split_no_gene_name = gtf_sub_no_gene_name[['CHR', 'START', 'STOP', 0, 2]]
+gtf_split_no_gene_name.rename(columns = {0 : 'ENS_ID', 2 : 'GENE'}, inplace = True)
 # clean up gene column
 gtf_split['GENE'] = gtf_split['GENE'].str.replace('gene_name ', '')
 gtf_split['GENE'] = gtf_split['GENE'].str.replace('"', '')
 gtf_split['GENE'] = gtf_split['GENE'].str.replace(' ', '')
+gtf_split_no_gene_name['GENE'] = gtf_split_no_gene_name['GENE'].str.replace('gene_name ', '')
+gtf_split_no_gene_name['GENE'] = gtf_split_no_gene_name['GENE'].str.replace('"', '')
+gtf_split_no_gene_name['GENE'] = gtf_split_no_gene_name['GENE'].str.replace(' ', '')
+gtf_split_no_gene_name['GENE'] = gtf_split_no_gene_name['GENE'].replace(['gene_sourceensembl',
+                                                                            'gene_sourceensembl_havana',
+                                                                            'gene_sourcehavana',
+                                                                            'gene_sourcehavana_tagene',
+                                                                            'gene_sourcemirbase'], np.nan)
 
 # clean up ensembl ID column
 gtf_split['ENS_ID'] = gtf_split['ENS_ID'].str.replace('gene_id ', '')
 gtf_split['ENS_ID'] = gtf_split['ENS_ID'].str.replace('"', '')
 gtf_split['ENS_ID'] = gtf_split['ENS_ID'].str.replace(' ', '')
+gtf_split_no_gene_name['ENS_ID'] = gtf_split_no_gene_name['ENS_ID'].str.replace('gene_id ', '')
+gtf_split_no_gene_name['ENS_ID'] = gtf_split_no_gene_name['ENS_ID'].str.replace('"', '')
+gtf_split_no_gene_name['ENS_ID'] = gtf_split_no_gene_name['ENS_ID'].str.replace(' ', '')
 
 # filter ref df
 # drop predicted
@@ -84,6 +79,7 @@ ref_sub.drop_duplicates(inplace = True)
 
 # filter gtf to autosomes
 gtf_autosomes = gtf_split[~gtf_split['CHR'].str.contains('|'.join(['KI', 'MT', 'GL', 'X', 'Y']))]
+gtf_autosomes_no_gene_name = gtf_split_no_gene_name[~gtf_split_no_gene_name['CHR'].str.contains('|'.join(['KI', 'MT', 'GL', 'X', 'Y']))]
 gtf_all = gtf_split[~gtf_split['CHR'].str.contains('|'.join(['KI', 'GL']))]
 
 # only keep refseq genes
@@ -100,11 +96,16 @@ gtf_ref_all['STOP_500kb_downstream'] = gtf_ref_all['STOP'] + 500000
 gtf_autosomes['START_500kb_upstream'] = gtf_autosomes['START'] - 500000
 gtf_autosomes['STOP_500kb_downstream'] = gtf_autosomes['STOP'] + 500000
 
+gtf_autosomes_no_gene_name['START_500kb_upstream'] = gtf_autosomes_no_gene_name['START'] - 500000
+gtf_autosomes_no_gene_name['STOP_500kb_downstream'] = gtf_autosomes_no_gene_name['STOP'] + 500000
+
 # export file
-gtf_ref.to_csv((output_prefix + '.gene_start_stop.autosomes.refseq.exp_validated.500kb_upstream_downstream.gtf.txt'), sep = '\t', index = None)
+gtf_ref.to_csv((output_prefix + '.gene_start_stop.gene_name.autosomes.refseq.exp_validated.500kb_upstream_downstream.gtf.txt'), sep = '\t', index = None, na_rep = 'NaN')
 
-gtf_ref_all.to_csv((output_prefix + '.gene_start_stop.all_chr.refseq.exp_validated.500kb_upstream_downstream.gtf.txt'), sep = '\t', index = None)
+gtf_ref_all.to_csv((output_prefix + '.gene_start_stop.gene_name.all_chr.refseq.exp_validated.500kb_upstream_downstream.gtf.txt'), sep = '\t', index = None, na_rep = 'NaN')
 
-gtf_autosomes.to_csv((output_prefix + '.gene_start_stop.autosomes.500kb_upstream_downstream.gtf.txt'), sep = '\t', index = None)
+gtf_autosomes.to_csv((output_prefix + '.gene_start_stop.gene_name.autosomes.500kb_upstream_downstream.gtf.txt'), sep = '\t', index = None, na_rep = 'NaN')
 
-gtf_all.to_csv((output_prefix + '.gene_start_stop.all_chr.500kb_upstream_downstream.gtf.txt'), sep = '\t', index = None)
+gtf_autosomes_no_gene_name.to_csv((output_prefix + '.gene_start_stop.autosomes.500kb_upstream_downstream.gtf.txt'), sep = '\t', index = None, na_rep = 'NaN')
+
+gtf_all.to_csv((output_prefix + '.gene_start_stop.gene_name.all_chr.500kb_upstream_downstream.gtf.txt'), sep = '\t', index = None, na_rep = 'NaN')

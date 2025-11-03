@@ -63,7 +63,7 @@ vep[['CHR', 'POS']] = vep[1].str.split(':', 1, expand = True)
 vep_sub = vep[[0, 'CHR', 'POS', 2, 3, 4, 6]]
 
 # change columns dtype
-vep_sub['POS'] = vep_sub['POS'].astype(int)
+vep_sub['POS'] = vep_sub['POS'].astype('Int64')
 
 # rename columns
 vep_sub.rename(columns={0 : 'ID',
@@ -178,7 +178,7 @@ downstream_tmp = downstream_tmp.merge(vep_gene_coord_sub, on = ['ID', 'GENE'], h
 ### make extra columns
 upstream_tmp['DISTANCE'] = upstream_tmp['START'] - upstream_tmp['POS']
 upstream_tmp['DATATYPE'] = 'UPSTREAM'
-downstream_tmp['DISTANCE'] = upstream_tmp['POS'] - upstream_tmp['STOP']
+downstream_tmp['DISTANCE'] = downstream_tmp['POS'] - downstream_tmp['STOP']
 downstream_tmp['DATATYPE'] = 'DOWNSTREAM'
 
 ### identify overlapping variants
@@ -189,6 +189,7 @@ downstream_tmp = downstream_tmp[downstream_tmp['ID'].isin(upstream_tmp['ID'])]
 both_upstream_downstream = pd.concat([upstream_tmp, downstream_tmp], axis = 0)
 
 ### aggregate to variants with the closest distance
+both_upstream_downstream = both_upstream_downstream.reset_index(drop = True)
 both_upstream_downstream = both_upstream_downstream.loc[both_upstream_downstream.groupby('ID')['DISTANCE'].idxmin()]
 
 ### split back into upstream and downstream variants
@@ -199,8 +200,8 @@ upstream_filt = upstream_filt.drop(columns = ['ENSEMBL_ID', 'START', 'STOP', 'DI
 downstream_filt = downstream_filt.drop(columns = ['ENSEMBL_ID', 'START', 'STOP', 'DISTANCE', 'DATATYPE'])
 
 ### create df without these variants
-upstream_fixed_no_overlap = upstream_fixed[~upstream_fixed['ID'].isin([both_upstream_downstream['ID']])]
-downstream_fixed_no_overlap = downstream_fixed[~downstream_fixed['ID'].isin([both_upstream_downstream['ID']])]
+upstream_fixed_no_overlap = upstream_fixed[~upstream_fixed['ID'].isin(both_upstream_downstream['ID'])]
+downstream_fixed_no_overlap = downstream_fixed[~downstream_fixed['ID'].isin(both_upstream_downstream['ID'])]
 
 ### reconcate
 upstream_fixed = pd.concat([upstream_fixed_no_overlap, upstream_filt], axis = 0)
@@ -274,21 +275,149 @@ else:
 # remove variants with gene labels from no gene df
 vep_no_gene = vep_no_gene[~vep_no_gene['ID'].isin(vep_gene_fixed['ID'])]
 
-# rename gene col
+# select closest ENSEMBL_ID
+## merge w gene coords
+vep_no_gene_coord = vep_no_gene.merge(gene_coord, on = ["ENSEMBL_ID"])
 
-# aggregate genes to remove duplicates
-print(vep_no_gene)
-vep_no_gene = vep_no_gene.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'ENSEMBL_ID': lambda x: '/'.join(sorted(set(x)))})
-print(vep_no_gene)
+## filter to within gene
+within_gene = vep_no_gene_coord[(vep_no_gene_coord['POS'] >= vep_no_gene_coord['START']) & (vep_no_gene_coord['POS'] <= vep_no_gene_coord['STOP'])]
+
+## drop gene, start, and stop and then drop duplicates
+within_gene = within_gene.drop(columns = ['GENE', 'START', 'STOP']).drop_duplicates()
+
+## aggregate genes to remove duplicates
+within_gene = within_gene.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'ENSEMBL_ID': lambda x: '/'.join(sorted(set(x)))})
+
+# check for dups
+if len(within_gene[within_gene['ID'].duplicated(keep = False)].index) != 0:
+    print(within_gene[within_gene['ID'].duplicated(keep = False)].sort_values(by = ['ID']))
+    sys.exit('duplicates still present in within gene df')
+else:
+    print('no duplicates present in within gene df')
+
+## filter to not within gene
+not_within_gene = vep_no_gene_coord[~((vep_no_gene_coord['POS'] >= vep_no_gene_coord['START']) & (vep_no_gene_coord['POS'] <= vep_no_gene_coord['STOP']))]
+not_within_gene = not_within_gene[~not_within_gene['ID'].isin(within_gene['ID'])]
+
+## identify if closest gene is upstream or downstream
+upstream = not_within_gene[not_within_gene['POS'] < not_within_gene['START']]
+downstream = not_within_gene[not_within_gene['POS'] > not_within_gene['STOP']]
+
+## filter to closest variant by position
+upstream['DISTANCE'] = upstream['START'] - upstream['POS']
+upstream = upstream.loc[upstream.groupby('ID')['DISTANCE'].idxmin()]
+
+downstream['DISTANCE'] = downstream['POS'] - downstream['STOP']
+downstream = downstream.loc[downstream.groupby('ID')['DISTANCE'].idxmin()]
+
+## drop gene, start, stop, and distance columns
+upstream = upstream.drop(columns = ['GENE', 'START', 'STOP', 'DISTANCE'])
+downstream = downstream.drop(columns = ['GENE', 'START', 'STOP', 'DISTANCE'])
+
+## check for remaining duplicates, and if they exist, combine them
+if len(upstream[upstream['ID'].duplicated(keep = False)].index) != 0:
+    upstream = upstream.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'ENSEMBL_ID': lambda x: '/'.join(sorted(set(x)))})
+
+if len(downstream[downstream['ID'].duplicated(keep = False)].index) != 0:
+    downstream = downstream.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'ENSEMBL_ID': lambda x: '/'.join(sorted(set(x)))})
+
+## clean up overlapping ids between upstream and downstream dfs
+### make df copies
+upstream_tmp = upstream.copy()
+downstream_tmp = downstream.copy()
+
+### add back in gene coords
+vep_no_gene_coord_sub = vep_no_gene_coord[['ID', 'GENE', 'ENSEMBL_ID', 'START', 'STOP']]
+
+upstream_tmp = upstream_tmp.merge(vep_no_gene_coord_sub, on = ['ID', 'ENSEMBL_ID'], how = 'inner')
+
+downstream_tmp = downstream_tmp.merge(vep_no_gene_coord_sub, on = ['ID', 'ENSEMBL_ID'], how = 'inner')
+
+### make extra columns
+upstream_tmp['DISTANCE'] = upstream_tmp['START'] - upstream_tmp['POS']
+upstream_tmp['DATATYPE'] = 'UPSTREAM'
+downstream_tmp['DISTANCE'] = downstream_tmp['POS'] - downstream_tmp['STOP']
+downstream_tmp['DATATYPE'] = 'DOWNSTREAM'
+
+### identify overlapping variants
+upstream_tmp = upstream_tmp[upstream_tmp['ID'].isin(downstream_tmp['ID'])]
+downstream_tmp = downstream_tmp[downstream_tmp['ID'].isin(upstream_tmp['ID'])]
+
+### concatenate
+both_upstream_downstream = pd.concat([upstream_tmp, downstream_tmp], axis = 0)
+### aggregate to variants with the closest distance
+both_upstream_downstream = both_upstream_downstream.reset_index(drop = True)
+both_upstream_downstream = both_upstream_downstream.loc[both_upstream_downstream.groupby('ID')['DISTANCE'].idxmin()]
+
+### split back into upstream and downstream variants
+upstream_filt = both_upstream_downstream[both_upstream_downstream['DATATYPE'] == 'UPSTREAM']
+downstream_filt = both_upstream_downstream[both_upstream_downstream['DATATYPE'] == 'DOWNSTREAM']
+
+### remove extra columns
+upstream_filt = upstream_filt.drop(columns = ['GENE', 'START', 'STOP', 'DISTANCE', 'DATATYPE'])
+downstream_filt = downstream_filt.drop(columns = ['GENE', 'START', 'STOP', 'DISTANCE', 'DATATYPE'])
+
+### create df without these variants
+upstream_fixed_no_overlap = upstream[~upstream['ID'].isin(both_upstream_downstream['ID'])]
+downstream_fixed_no_overlap = downstream[~downstream['ID'].isin(both_upstream_downstream['ID'])]
+
+### reconcate
+upstream_fixed = pd.concat([upstream_fixed_no_overlap, upstream_filt], axis = 0)
+downstream_fixed = pd.concat([downstream_fixed_no_overlap, downstream_filt], axis = 0)
+
+## add upstream and downstream gene labels
+upstream_fixed['ENSEMBL_ID'] = 'upstream_' + upstream_fixed['ENSEMBL_ID']
+downstream_fixed['ENSEMBL_ID'] = 'downstream_' + downstream_fixed['ENSEMBL_ID']
+
+## concentate upstream and downstream
+not_within_gene_fixed = pd.concat([upstream_fixed, downstream_fixed], axis = 0).drop_duplicates()
+
+# check for dups
+if len(not_within_gene_fixed[not_within_gene_fixed['ID'].duplicated(keep = False)].index) != 0:
+    print(not_within_gene_fixed[not_within_gene_fixed['ID'].duplicated(keep = False)].sort_values(by = ['ID']))
+    sys.exit('duplicates still present in not within gene df')
+else:
+    print('no duplicates present in not within gene df')
+
+## identify genes that did no map to gene coords
+vep_no_map = vep_no_gene[~vep_no_gene['ID'].isin(within_gene['ID'])]
+vep_no_map = vep_no_map[~vep_no_map['ID'].isin(not_within_gene_fixed['ID'])]
+vep_no_map['ENSEMBL_ID'] = vep_no_map['ENSEMBL_ID'].replace('-', np.nan)
+
+## aggregate genes to remove duplicates
+vep_no_map = vep_no_map.groupby(['ID', 'CHR', 'POS', 'ALLELE', 'RSID'], as_index = False).agg({'ENSEMBL_ID': lambda x: '/'.join(sorted(set(x.dropna().astype(str))))})
+
+# check for dups
+if len(vep_no_map[vep_no_map['ID'].duplicated(keep = False)].index) != 0:
+    print(vep_no_map[vep_no_map['ID'].duplicated(keep = False)].sort_values(by = ['ID']))
+    sys.exit('duplicates still present in no map df')
+else:
+    print('no duplicates present in no map df')
+
+
+## concatenate no gene
+vep_no_gene_fixed = pd.concat([within_gene, not_within_gene_fixed, vep_no_map], axis = 0)
+
+# check for renaming duplicates
+if len(vep_no_gene_fixed[vep_no_gene_fixed['ID'].duplicated(keep = False)].index) != 0:
+    print(vep_no_gene_fixed[vep_no_gene_fixed['ID'].duplicated(keep = False)].sort_values(by = ['ID']))
+    sys.exit('duplicates still present in final dataframe')
+
+else:
+    print('no duplicates present in final dataframe')
+
 
 # add in variants with no genes
-if len(vep_no_gene.index) != 0:
-    vep_no_gene = vep_no_gene.rename(columns = {'ENSEMBL_ID' : 'GENE'})
-    vep_fixed = pd.concat([vep_gene_fixed, vep_no_gene], axis = 0)
+if len(vep_no_gene_fixed.index) != 0:
+    vep_no_gene_fixed = vep_no_gene_fixed.reset_index(drop = True)
+    vep_gene_fixed = vep_gene_fixed.reset_index(drop = True)
+    vep_no_gene_fixed = vep_no_gene_fixed.rename(columns = {'ENSEMBL_ID' : 'GENE'})
+    vep_fixed = pd.concat([vep_gene_fixed, vep_no_gene_fixed], axis = 0, ignore_index = True)
 else:
     vep_fixed = vep_gene_fixed.copy()
 
-print(vep_fixed)
+# fill missing RSID with ID
+vep_fixed['RSID'] = vep_fixed['RSID'].fillna(vep_fixed['ID'])
 
 # export file
 output_filepath = output_prefix + '.vep_output.cleaned.txt'

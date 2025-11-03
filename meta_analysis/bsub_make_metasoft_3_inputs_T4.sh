@@ -17,11 +17,11 @@
 # In an array job, the variable $LSB_JOBINDEX will contain the index
 # of the current sub-job.
 
-#BSUB -o logs/make_metasoft_input_T4.%J.%I.stdout 
+#BSUB -o logs/make_metasoft_input_T4.%J.%I.out 
 # Filename to append the job's stdout; change to -oo to overwrite.
 #'%J' becomes the job ID number, '%I' becomes the array index.
 
-#BSUB -e logs/make_metasoft_input_T4.%J.%I.stderr 
+#BSUB -e logs/make_metasoft_input_T4.%J.%I.err
 # Filename to append the job's stderr; change to -eo to overwrite. 
 # If omitted, stderr is combined with stdout. 
 # '%J' becomes the job ID number, '%I' becomes the array index.
@@ -75,9 +75,13 @@ INDEX=$((LSB_JOBINDEX-1))
 ## ancestry
 ANCESTRY_INDEX=${ANCESTRY[$INDEX]}
 
+# load modules
+module purge
+module load R
+
 # TSH three file conversion
 Rscript metasoft_3_inputs_no_adjustment_T4.R \
---aou_input /project/ritchie02/projects/TSH/meta_analysis/AOU_results/AOU.${ANCESTRY_INDEX}.n=2408.FREE_T4.glm.linear \
---atlas_input /project/ritchie02/projects/TSH/meta_analysis/ATLAS_results/ATLAS.${ANCESTRY_INDEX}.n=340.FreeT4.glm.linear \
---biome_input /project/ritchie02/projects/TSH/meta_analysis/BioMe_results/BioMe.${ANCESTRY_INDEX}.n=2711.FT4.glm.linear \
+--aou_input AOU_results/AOU.${ANCESTRY_INDEX}.n=4037.FREE_T4.glm.linear \
+--atlas_input ATLAS_results/ATLAS.${ANCESTRY_INDEX}.n=340.FREE_T4.glm.linear \
+--biome_input BioMe_results/BioMe.${ANCESTRY_INDEX}.n=2711.FREE_T4.glm.linear \
 --output_prefix input/${ANCESTRY_INDEX}.FREE_T4.3_inputs.metasoft_input.no_correction

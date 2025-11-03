@@ -1,0 +1,6 @@
+# load modules
+module purge
+module load liftOver
+
+# run liftover
+liftOver formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.liftover_input.txt ucsc-chainfiles/hg19ToHg38.over.chain formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.liftover_output.txt formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.liftover_failed.txt

@@ -3,7 +3,7 @@
 # BSUB parameters
 ######################################################################
 
-#BSUB -J make_plots[1-6]
+#BSUB -J make_plots
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -63,68 +63,20 @@
 
 # define parallelization variables
 PREFIX=(
-    "AFR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
-    "EUR.INV_NORMAL_TSH.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
-    "AFR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
-    "EUR.FREE_T4.3_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
-    "AFR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
-    "EUR.INV_NORMAL_TSH.5_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction"
+    "formatted_invnormTSH_overall_130421_invvar1.txt-QCfiltered_GC.clean.b38"
 )
 
 TITLE=(
-    "AFR TSH Meta Analysis- AOU + ATLAS + BioMe"
-    "EUR TSH Meta Analysis- AOU + ATLAS + BioMe"
-    "AFR Free T4 Meta Analysis- AOU + ATLAS + BioMe"
-    "EUR Free T4 Meta Analysis- AOU + ATLAS + BioMe"
-    "AFR TSH Meta Analysis- AOU + ATLAS + BioMe + PMBB + BioVU"
-    "EUR TSH Meta Analysis- AOU + ATLAS + BioMe + PMBB + BioVU"
+    "EUR TSH Paper Results"
 )
 
 SUBTITLE=(
-    "23467"
-    "23467"
-    "7088"
-    "7088"
-    "33299"
-    "33299"
+    "271040"
 )
 
 INVERT=(
     "True"
-    "False"
-    "True"
-    "False"
-    "True"
-    "False"
 )
-
-KNOWN_GENES=(
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "Free_T4_Known_Genes.txt"
-    "Free_T4_Known_Genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-    "INV_NORMAL_TSH.known_genes.txt"
-)
-
-PLOT_SIG=(
-    "True"
-    "True"
-    "False"
-    "False"
-    "True"
-    "True"
-)
-
-ANNOT_THRES=(
-    "5e-8"
-    "5e-8"
-    "1e-5"
-    "1e-5"
-    "5e-8"
-    "5e-8"
-)
-
 # Get the index of the current job
 INDEX=$((LSB_JOBINDEX-1))
 
@@ -133,38 +85,32 @@ PREFIX_INDEX=${PREFIX[$INDEX]}
 TITLE_INDEX=${TITLE[$INDEX]}
 SUBTITLE_INDEX=${SUBTITLE[$INDEX]}
 INVERT_INDEX=${INVERT[$INDEX]}
-KNOWN_GENES_INDEX=${KNOWN_GENES[$INDEX]}
-PLOT_SIG_INDEX=${PLOT_SIG[$INDEX]}
-ANNOT_THRES_INDEX=${ANNOT_THRES[$INDEX]}
 
-# call script
+# script
 python manhattan_plotting_script.py \
-    --annot_input vep_output/${PREFIX_INDEX}.suggestive.vep_output.cleaned.txt \
-    --sumstats_input output/${PREFIX_INDEX}.cleaned.txt \
+    --annot_input vep_output/${PREFIX_INDEX}.suggestive.merge_genes.vep_output.cleaned.txt \
+    --sumstats_input ${PREFIX_INDEX}.txt.gz \
     --title "${TITLE_INDEX}" \
     --subtitle "n = ${SUBTITLE_INDEX}" \
     --sumstats_chr_col 'CHR' \
-    --sumstats_pos_col BP \
-    --sumstats_id_col RSID \
-    --sumstats_pval_col PVALUE_RE \
+    --sumstats_pos_col POS \
+    --sumstats_id_col rsid \
+    --sumstats_pval_col P.value \
     --annot_chr_col CHR \
     --annot_pos_col POS \
     --annot_id_col ID \
     --annot_gene_col GENE \
-    --known_genes ${KNOWN_GENES_INDEX} \
-    --sig 5e-8 \
-    --sug ${ANNOT_THRES_INDEX} \
-    --annot ${ANNOT_THRES_INDEX} \
+    --known_genes INV_NORMAL_TSH.known_genes.txt \
+    --sig 5e-25 \
+    --sug 5e-25 \
+    --annot 5e-25 \
     --vert_table True \
-    --vert_merge_signal False \
-    --vert_chr_pos True \
+    --vert_merge_signal True \
+    --vert_chr_pos False \
     --horiz_table True \
     --horiz_merge_signal False \
     --horiz_chr_pos False \
-    --plot_sig ${PLOT_SIG_INDEX} \
+    --plot_sig True \
+    --plot_sig True \
     --invert ${INVERT_INDEX} \
     --output_prefix plots/${PREFIX_INDEX}
-
-
-
-    

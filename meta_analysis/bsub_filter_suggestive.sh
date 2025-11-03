@@ -3,7 +3,7 @@
 # BSUB parameters
 ######################################################################
 
-#BSUB -J filter_suggestive[1-4]
+#BSUB -J filter_suggestive[1-6]
 # Job name and (optional) job array properties, in the format
 #   "jobname"
 # for a simple job, or
@@ -76,13 +76,26 @@ ANCESTRY=(
     "EUR"
     "AFR"
     "EUR"
+    "AFR"
+    "EUR"
 )
 
 INPUTS=(
     '3'
     '3'
+    '3'
+    '3'
     '5'
     '5'
+)
+
+PHENO=(
+    'INV_NORMAL_TSH'
+    'INV_NORMAL_TSH'
+    'FREE_T4'
+    'FREE_T4'
+    'INV_NORMAL_TSH'
+    'INV_NORMAL_TSH'
 )
 
 # Get the index of the current job
@@ -91,6 +104,7 @@ INDEX=$((LSB_JOBINDEX-1))
 # Define parallelization variable indices
 ANCESTRY_INDEX=${ANCESTRY[$INDEX]}
 INPUTS_INDEX=${INPUTS[$INDEX]}
+PHENO_INDEX=${PHENO[$INDEX]}
 
 # load modules
 module purge
@@ -98,8 +112,8 @@ module load python
 
 # run metasoft 
 python filter_suggestive.py \
-        --input output/${ANCESTRY_INDEX}.INV_NORMAL_TSH.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned.txt \
+        --input output/${ANCESTRY_INDEX}.${PHENO_INDEX}.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction.cleaned.txt \
         --input_type meta \
         --pval_threshold 1e-5 \
-        --output_prefix suggestive/${ANCESTRY_INDEX}.INV_NORMAL_TSH.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction
+        --output_prefix suggestive/${ANCESTRY_INDEX}.${PHENO_INDEX}.${INPUTS_INDEX}_inputs.no_correction.union.metasoft_output.no_mean_hetero_correction
      
